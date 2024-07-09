@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -27,7 +29,7 @@ public class LoginController {
 
 
     @GetMapping("/loginForm")
-    public String login() {
+    public String loginFrom() {
         System.out.println("");
         return "loginForm";
     }
@@ -37,17 +39,13 @@ public class LoginController {
         return "joinForm";
     }
 
-    @GetMapping("/userLogin")
-    public ResponseEntity<?> login(@ModelAttribute("user") UserEntity user) {
-        System.out.println("user.getUsername() = " + user.getUserid());
-        log.info("user.getUserId() = {}", user.getUserid());
-//        UserEntity byUsername = userRepository.findByUsername(user.getUsername());
-
-//        if(byUsername == null) {
-//            ErrorResponse errorResponse = new ErrorResponse("아이디 없음", 401);
-//            return ResponseEntity.badRequest().body(errorResponse);
-//        }
-
+    @PostMapping("/userLogin")
+    public ResponseEntity<?> login() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = authentication.getPrincipal();
+        System.out.println("authentication = " + authentication);
+        System.out.println("principal = " + principal);
+        System.out.println("Principal class: " + principal.getClass().getName());
         return ResponseEntity.ok(200);
     }
 

@@ -20,9 +20,7 @@ import java.util.Iterator;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-
-    private final JWTUtil jwtUtil;
+public class CustomOAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler  {
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -57,16 +55,5 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         response.sendRedirect("http://localhost:8080/user");
 
     }
-
-//    private Cookie createCookie(String key, String value) {
-//
-//        Cookie cookie = new Cookie(key, value);
-//        cookie.setMaxAge(60*60*60);
-//        cookie.setSecure(true);
-//        cookie.setPath("/");
-//        cookie.setHttpOnly(true);
-//        return cookie;
-//    }
-
 
 }

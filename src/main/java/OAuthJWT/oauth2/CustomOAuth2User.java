@@ -1,8 +1,11 @@
 package OAuthJWT.oauth2;
 
 import OAuthJWT.dto.UserDTO;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.ArrayList;
@@ -11,7 +14,7 @@ import java.util.Map;
 
 
 @RequiredArgsConstructor
-public class CustomOAuth2User implements OAuth2User {
+public class CustomOAuth2User implements UserDetails , OAuth2User {
 
     private final UserDTO userDTO;
 
@@ -38,10 +41,25 @@ public class CustomOAuth2User implements OAuth2User {
         return collection;
     }
 
+    // userDetails override method
+    @Override
+    public String getPassword() {
+        return userDTO.getPassword();
+    }
+
+    @Override
+    public String getUsername() {
+        return userDTO.getUsername();
+    }
+
 
     @Override
     public String getName() {
         return userDTO.getUsername();
     }
+
+
+
+
 
 }

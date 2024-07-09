@@ -24,7 +24,7 @@ public class JoinService {
         UserEntity user = UserEntity.builder()
                 .userid(userDTO.getUserid())
                 .username(userDTO.getUsername())
-                .role(userDTO.getRole())
+                .role("ROLE_USER")
                 .password(bCryptPasswordEncoder.encode(userDTO.getPassword()))
                 .email(userDTO.getEmail())
                 .build();
