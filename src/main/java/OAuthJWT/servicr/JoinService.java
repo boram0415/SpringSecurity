@@ -20,7 +20,7 @@ public class JoinService {
         boolean isExist = userRepository.existsByUsername(userDTO.getUsername());
 
         if (isExist) return;
-
+        //테스트
         UserEntity user = UserEntity.builder()
                 .userid(userDTO.getUserid())
                 .username(userDTO.getUsername())
