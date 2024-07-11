@@ -35,7 +35,7 @@ public class MainController {
         System.out.println("authentication = " + authentication.getName());
         System.out.println("authentication = " + authentication.getAuthorities());
         System.out.println("principal = " + principal);
-        System.out.println("Principal class: " + principal.getClass().getName());
+//        System.out.println("Principal class: " + principal.getClass().getName());
 
         // 권한 확인
         boolean hasAdminRole = authentication.getAuthorities().stream()
