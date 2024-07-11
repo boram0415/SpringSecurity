@@ -1,0 +1,42 @@
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<configuration>-->
+
+<!--    &lt;!&ndash; 로그 파일 경로 설정 &ndash;&gt;-->
+<!--    <property name="LOG_FILE" value="/Users/boramkim/Desktop/project files/security-OAuth2.0-JWT/logs/logfile.log" />-->
+<!--    &lt;!&ndash; 콘솔에 로그를 출력하는 ConsoleAppender 설정 &ndash;&gt;-->
+<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <encoder>-->
+<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+
+<!--    &lt;!&ndash; RollingFileAppender 설정: 로그 메시지를 파일에 기록하고, 파일을 일정 시간마다 롤링 &ndash;&gt;-->
+<!--    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+<!--        &lt;!&ndash; 로그 파일의 이름과 위치 지정 &ndash;&gt;-->
+<!--        <file>${LOG_FILE}</file>-->
+<!--        &lt;!&ndash; 시간 기반 롤링 정책 설정 &ndash;&gt;-->
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+<!--            &lt;!&ndash; 롤링된 로그 파일의 이름 패턴 지정 (날짜 추가 및 gzip 형식 압축) &ndash;&gt;-->
+<!--            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>-->
+<!--            &lt;!&ndash; 최대 30일치 로그 파일 보관 &ndash;&gt;-->
+<!--            <maxHistory>30</maxHistory>-->
+<!--        </rollingPolicy>-->
+<!--        &lt;!&ndash; 로그 메시지의 출력 형식 지정 &ndash;&gt;-->
+<!--        <encoder>-->
+<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+
+<!--    &lt;!&ndash; OAuthJWT 패키지에 대한 로거 설정 &ndash;&gt;-->
+<!--    <logger name="OAuthJWT" level="DEBUG" additivity="false">-->
+<!--        &lt;!&ndash; 이 로거가 로그 메시지를 기록할 Appender 지정 &ndash;&gt;-->
+<!--        <appender-ref ref="FILE" />-->
+<!--    </logger>-->
+
+<!--    &lt;!&ndash; 루트 로거 설정 &ndash;&gt;-->
+<!--    <root level="INFO">-->
+<!--        &lt;!&ndash; 루트 로거가 로그 메시지를 기록할 Appender 지정 &ndash;&gt;-->
+<!--        <appender-ref ref="FILE" />-->
+<!--    </root>-->
+
+<!--</configuration>-->

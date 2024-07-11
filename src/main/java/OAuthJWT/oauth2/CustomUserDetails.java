@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 @RequiredArgsConstructor
-public class CustomOAuth2User implements UserDetails , OAuth2User {
+public class CustomUserDetails implements UserDetails , OAuth2User {
 
     private final UserDTO userDTO;
 
