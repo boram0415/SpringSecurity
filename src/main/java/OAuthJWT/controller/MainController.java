@@ -29,15 +29,24 @@ public class MainController {
     }
 
     @GetMapping("/user")
-    public String user() {
-
+    public ResponseEntity<?> user() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Object principal = authentication.getPrincipal();
-        System.out.println("authentication = " + authentication);
+        System.out.println("authentication = " + authentication.getName());
+        System.out.println("authentication = " + authentication.getAuthorities());
         System.out.println("principal = " + principal);
         System.out.println("Principal class: " + principal.getClass().getName());
-//        OAuth2User user = (OAuth2User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return "user test";
+
+        // 권한 확인
+        boolean hasAdminRole = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+        boolean hasUserRole = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_USER"));
+
+        System.out.println("Has ROLE_ADMIN: " + hasAdminRole);
+        System.out.println("Has ROLE_USER: " + hasUserRole);
+        return ResponseEntity.ok(200);
+
     }
 
     @GetMapping("/expire")
@@ -54,5 +63,10 @@ public class MainController {
     @GetMapping("/loginSuccess")
     public ResponseEntity<String> loginSuccess() {
         return ResponseEntity.ok("loginSuccess");
+    }
+
+    @GetMapping("/logoutSuccess")
+    public ResponseEntity<String> logoutSuccess() {
+        return ResponseEntity.ok("logoutSuccess");
     }
 }

@@ -1,7 +1,7 @@
 package OAuthJWT.formLoginHandler;
 
 import OAuthJWT.dto.UserDTO;
-import OAuthJWT.oauth2.CustomOAuth2User;
+import OAuthJWT.oauth2.CustomUserDetails;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,7 +27,7 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
             // 사용자의 주체 정보
         Object principal = authentication.getPrincipal();
 
-        if(principal instanceof CustomOAuth2User customOAuth2User){
+        if(principal instanceof CustomUserDetails customOAuth2User){
             System.out.println("name = " + customOAuth2User.getName());
             System.out.println("username = " + customOAuth2User.getUsername());
             System.out.println("getPassword = " + customOAuth2User.getPassword());

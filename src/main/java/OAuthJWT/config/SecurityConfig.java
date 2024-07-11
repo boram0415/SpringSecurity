@@ -2,13 +2,18 @@ package OAuthJWT.config;
 
 
 import OAuthJWT.formLoginHandler.CustomSuccessHandler;
+import OAuthJWT.jwt.JWTFilter;
 import OAuthJWT.jwt.JWTUtil;
+import OAuthJWT.jwt.LoginFilter;
+//import OAuthJWT.logging.LoggingFilter;
+import OAuthJWT.logging.LoggingFilter;
 import OAuthJWT.oauth2.CustomOAuthSuccessHandler;
 import OAuthJWT.oauth2.CustomOAuth2UserService;
-import OAuthJWT.formLoginHandler.PrincipalDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,6 +23,13 @@ import org.springframework.security.config.annotation.web.configurers.LogoutConf
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 @Configuration
@@ -28,11 +40,10 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final CustomOAuthSuccessHandler customOAuthSuccessHandler;
     private final CustomSuccessHandler customSuccessHandler;
+    private final AuthenticationConfiguration configuration;
+    private final JWTUtil jwtUtil;
 
-    @Bean
-    BCryptPasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+
 
     @Bean
     public SecurityFilterChain FilterChain(HttpSecurity http) throws Exception {
@@ -47,9 +58,11 @@ public class SecurityConfig {
                         // 정적 리소스에 대한 접근 허용
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         // authenticated() : 로그인 되어야 접근 가능 함
-                        .requestMatchers("/joinForm", "/join").permitAll()
+                        .requestMatchers("/user").hasRole("USER")
+                        .requestMatchers("/joinForm", "/join","/error").permitAll()
                         .requestMatchers("/admin").hasRole("ADMIN")
                         .requestMatchers("/swagger", "/swagger-ui/**", "/api-docs", "/api-docs/**", "/v3/api-docs/**")
+
                         .permitAll()
                         .anyRequest().authenticated());
 
@@ -58,43 +71,91 @@ public class SecurityConfig {
         http
                 .formLogin(AbstractHttpConfigurer::disable);
 
-        //From 로그인 방식 disable
         http
-                .formLogin((form) -> form
-                        .loginPage("/loginForm")
-                        .loginProcessingUrl("/login")
-                        .successHandler(customSuccessHandler)
-                        .permitAll()
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessUrl("/logoutSuccess")
+                        .permitAll());
 
-                ).logout(LogoutConfigurer::permitAll);
+        //From 로그인 방식 disable
+//        http
+//                .formLogin((form) -> form
+//                        .loginPage("/loginForm")
+//                        .loginProcessingUrl("/login")
+//                        .successHandler(customSuccessHandler)
+//                        .permitAll()
+//
+//                ).logout(LogoutConfigurer::permitAll);
 
 
         //HTTP Basic 인증 방식 disable
         http
                 .httpBasic(AbstractHttpConfigurer::disable);
 
+        //cors 보안 강화
+        http.
+                cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
         //oauth2
-        http
-                .oauth2Login((auth) -> auth
-                        .userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
-                                .userService(customOAuth2UserService)))
-                        .successHandler(customOAuthSuccessHandler));
+//        http
+//                .oauth2Login((auth) -> auth
+//                        .userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
+//                                .userService(customOAuth2UserService)))
+//                        .successHandler(customOAuthSuccessHandler));
 
         // JWTFilter 추가
-//        http
-//                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        http
+                .addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
 
-        //세션 설정 : STATELESS
+        http
+                .addFilterAt(new LoginFilter(customAuthenticationManager(configuration),jwtUtil), UsernamePasswordAuthenticationFilter.class);
+
+
+        // 로깅 설정
+//        http
+//                .addFilterAfter(new LoggingFilter(), UsernamePasswordAuthenticationFilter.class); // LoggingFilter 를 UsernamePasswordAuthenticationFilter 가 실행된 후에 실행
+
+        // 세션 설정 : STATELESS
         http
                 .sessionManagement((session) -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
 
+//    @Bean
+//    public FilterRegistrationBean<LoggingFilter> loggingFilter() {
+//        FilterRegistrationBean<LoggingFilter> registrationBean = new FilterRegistrationBean<>();
+//        registrationBean.setFilter(new LoggingFilter());
+//        registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE); // 가장 먼저 실행되도록 설정
+//        return registrationBean;
+//    }
+
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager customAuthenticationManager(AuthenticationConfiguration configure) throws Exception {
+        return configure.getAuthenticationManager();
+    }
+
+    @Bean
+    BCryptPasswordEncoder bCryptPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("*")); // 모든 출처 허용
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 메서드
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // 허용할 헤더
+        configuration.setAllowCredentials(true); // 쿠키 허용
+        configuration.setMaxAge(3600L); // 캐싱 시간 설정
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
 

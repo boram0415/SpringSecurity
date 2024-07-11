@@ -30,7 +30,6 @@ public class LoginController {
 
     @GetMapping("/loginForm")
     public String loginFrom() {
-        System.out.println("");
         return "loginForm";
     }
 
@@ -55,6 +54,7 @@ public class LoginController {
         joinService.joinProcess(userDTO);
         return ResponseEntity.ok("회원가입완료");
     }
+
 
 
 

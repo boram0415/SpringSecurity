@@ -17,7 +17,9 @@ import java.util.Base64;
 import java.util.Date;
 
 /**
- * JWT 토큰 발행 클래스
+ * JWT
+ * 발행
+ * 유효성 검증
  * */
 @Component
 @Slf4j
@@ -27,10 +29,8 @@ public class JWTUtil {
     private String accessSecretKey;
     @Value("${jwt.refresh-secret}")
     private String refreshSecretKey;
-    @Value("${jwt.expiration}")
-    private static long expirationTime;
-    @Value("${jwt.refresh-expiration}")
-    private static long refreshExpirationTime;
+    private static final long expirationTime = 30 * 60 * 1000; // 30분;
+    private static final long refreshExpirationTime = 7 * 24 * 60 * 60 * 1000 ; // 7일
 
     private static Key accessEncKey;
     private static Key refreshEncKey;
@@ -55,8 +55,8 @@ public class JWTUtil {
         return Jwts.builder()
                 .claim("username", username)
                 .claim("role", role)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expirationTime))
+                .issuedAt(new Date(System.currentTimeMillis()))  // 토큰 발급 시간
+                .expiration(new Date(System.currentTimeMillis() + expirationTime)) // 만료 시
                 .signWith(key)
                 .compact();
     }
@@ -87,21 +87,41 @@ public class JWTUtil {
 
     private static String extractClaim(String token, Key key, String claim) {
         return Jwts.parser()
-                .setSigningKey(key)
+                .verifyWith((SecretKey) key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
                 .get(claim, String.class);
     }
 
+//
+//    public static Boolean isExpiredAccessToken(String token) {
+//
+//        log.debug("token : {}", token);
+//
+//        // JWT 토큰 파싱 하여 클레임 객체 추출
+//        Claims claims = Jwts.parser()
+//                .verifyWith((SecretKey) accessEncKey)
+//                .build()
+//                .parseSignedClaims(token).getPayload();
+//
+////         클레임 페이로드 출력
+////        System.out.println("Issuer: " + claims.getIssuer());
+////        System.out.println("Subject: " + claims.getSubject());
+//        System.out.println("Expiration: " + claims.getExpiration());
+//        System.out.println(new Date());
+////        System.out.println("Other Claims: " + claims);
+//        System.out.println(Jwts.parser().verifyWith((SecretKey) accessEncKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date()));
+//        System.out.println("jwsClaims.getPayload() = "  + claims);
+//
+//        return Jwts.parser().verifyWith((SecretKey) accessEncKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
+//    }
+
     private static boolean validateToken(String token, Key key) {
+
         try {
-
-            System.out.println("token = " + token);
-            System.out.println("key = " + key);
-
-            Jwts.parser().setSigningKey(key).build().parseClaimsJws(token);
-            return true;
+            log.info("token = {} , keyEncoded = {} ", token,key.getEncoded());
+            return Jwts.parser().verifyWith((SecretKey) key).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
         } catch (ExpiredJwtException e) {
             log.error("JWT Token is expired", e);
         } catch (MalformedJwtException e) {

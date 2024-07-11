@@ -9,10 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
-@Service
+//@Service
 @RequiredArgsConstructor
 @Slf4j
 public class PrincipalDetailsService implements UserDetailsService {
@@ -22,6 +23,7 @@ public class PrincipalDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserEntity user = userRepository.findByUsername(username);
+        System.out.println("username="+username);
         log.debug("username: {}", user);
         if (user != null) {
             return new CustomUserDetails(UserDTO.builder()

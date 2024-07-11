@@ -20,13 +20,13 @@ public class LoggingAspect {
     // AfterReturning advice: 메서드가 정상적으로 실행 후
     @AfterReturning(pointcut = "execution(* OAuthJWT..*(..))")
     public void logAfterReturning(JoinPoint joinPoint) {
-        log.info("메서드 실행 완료 : {}() in class {}", joinPoint.getSignature().getName(), joinPoint.getSignature().getDeclaringTypeName());
+//        log.info("메서드 실행 완료 : {}() in class {}", joinPoint.getSignature().getName(), joinPoint.getSignature().getDeclaringTypeName());
     }
 
     // AfterThrowing advice: 메서드 실행 중 예외 발생 시
     @AfterThrowing(pointcut = "execution(* OAuthJWT..*(..))", throwing = "error")
     public void logAfterThrowing(JoinPoint joinPoint, Throwable error) {
-        log.error("메서드 예외 !!!!! : {}() in class {}, Error: {}", joinPoint.getSignature().getName(), joinPoint.getSignature().getDeclaringTypeName(), error.getMessage());
+//        log.error("메서드 예외 !!!!! : {}() in class {}, Error: {}", joinPoint.getSignature().getName(), joinPoint.getSignature().getDeclaringTypeName(), error.getMessage());
     }
 
 

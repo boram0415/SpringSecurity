@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 
@@ -27,18 +28,7 @@ public class CustomUserDetails implements UserDetails , OAuth2User {
     // 권한 리턴 메소드
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
-        Collection<GrantedAuthority> collection = new ArrayList<>();
-
-        collection.add(new GrantedAuthority() {
-
-            @Override
-            public String getAuthority() {
-                return userDTO.getRole();
-            }
-        });
-
-        return collection;
+        return Collections.singletonList((GrantedAuthority) userDTO::getRole);
     }
 
     // userDetails override method
