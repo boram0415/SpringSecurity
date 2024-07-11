@@ -34,7 +34,7 @@
 - Spring Boot 3.x
 - Spring Security 6.x
 - Spring OAuth2
-- JWT
+- JWT 0.12.x
 
 ## 설정
 
