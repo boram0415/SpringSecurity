@@ -33,15 +33,16 @@ public class JWTUtil {
     private static final long expirationTime = 30 * 60 * 1000; // 30분;
     private static final long refreshExpirationTime = 7 * 24 * 60 * 60 * 1000; // 7일
 
-    private static Key accessEncKey;
-    private static Key refreshEncKey;
+    private static SecretKey accessEncKey;
+    private static SecretKey refreshEncKey;
 
 
     @PostConstruct
     public void init() {
-        accessEncKey = new SecretKeySpec(accessSecretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
-        refreshEncKey = new SecretKeySpec(refreshSecretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
-//        log.info("accessEncKey initialized: {}", Arrays.toString(accessEncKey.getEncoded()));
+        accessEncKey = new SecretKeySpec(accessSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        refreshEncKey = new SecretKeySpec(refreshSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        log.info("accessEncKey initialized: {}", Arrays.toString(accessEncKey.getEncoded()));
+        log.info("refreshEncKey initialized: {}", Arrays.toString(accessEncKey.getEncoded()));
     }
 
     public static String generateAccessToken(String username, String role) {
@@ -94,41 +95,15 @@ public class JWTUtil {
                     .parseSignedClaims(token)
                     .getPayload()
                     .get(claim, String.class);
-
         }
-
         throw new NullPointerException("Invalid claim");
-
     }
 
-    //
-//    public static Boolean isExpiredAccessToken(String token) {
-//
-//        log.info("token : {}", token);
-//
-//        // JWT 토큰 파싱 하여 클레임 객체 추출
-//        Claims claims = Jwts.parser()
-//                .verifyWith((SecretKey) accessEncKey)
-//                .build()
-//                .parseSignedClaims(token).getPayload();
-//
-////         클레임 페이로드 출력
-////        System.out.println("Issuer: " + claims.getIssuer());
-////        System.out.println("Subject: " + claims.getSubject());
-//        System.out.println("Expiration: " + claims.getExpiration());
-//        System.out.println(new Date());
-////        System.out.println("Other Claims: " + claims);
-//        System.out.println(Jwts.parser().verifyWith((SecretKey) accessEncKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date()));
-//        System.out.println("jwsClaims.getPayload() = "  + claims);
-//
-//        return Jwts.parser().verifyWith((SecretKey) accessEncKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
-//    }
-
-    private static boolean validateToken(String token, Key key) {
+    private static boolean validateToken(String token, SecretKey key) {
         try {
             // JWT 토큰에서 만료 날짜를 추출
             Date expirationDate = Jwts.parser()
-                    .verifyWith((SecretKey) key)
+                    .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload()

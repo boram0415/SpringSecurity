@@ -15,11 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.print.attribute.standard.PresentationDirection;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Optional;
 
 /**
  * 1. OncePerRequestFilter 를 활용하는 이유
