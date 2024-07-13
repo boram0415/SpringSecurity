@@ -14,13 +14,13 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        logger.debug("Request URI: {}", request.getRequestURI());
+        logger.info("Request URI: {}", request.getRequestURI());
         return true;
     }
 
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) {
-        logger.debug("Response Status: {}", response.getStatus());
+        logger.info("Response Status: {}", response.getStatus());
     }
 
     @Override
@@ -28,7 +28,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
         if (ex != null) {
             logger.error("Request completed with exception: {}", ex.getMessage());
         } else {
-            logger.debug("Request completed successfully");
+            logger.info("Request completed successfully");
         }
     }
 }

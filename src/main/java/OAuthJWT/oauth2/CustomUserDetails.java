@@ -1,23 +1,19 @@
 package OAuthJWT.oauth2;
 
 import OAuthJWT.dto.UserDTO;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-
-@RequiredArgsConstructor
-public class CustomUserDetails implements UserDetails , OAuth2User {
-
-    private final UserDTO userDTO;
+@Slf4j
+public record CustomUserDetails(UserDTO userDTO) implements UserDetails, OAuth2User {
 
     @Override
     // 각 소셜 로그인 인증 서버가 응답하는 속성값이 달라 획일화가 어려워 사용하지 않음
@@ -47,9 +43,5 @@ public class CustomUserDetails implements UserDetails , OAuth2User {
     public String getName() {
         return userDTO.getUsername();
     }
-
-
-
-
 
 }

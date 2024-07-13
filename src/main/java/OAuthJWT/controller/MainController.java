@@ -1,16 +1,21 @@
 package OAuthJWT.controller;
 
 
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
+import OAuthJWT.oauth2.CustomUserDetails;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 @RestController
+@Slf4j
 public class MainController {
 
     @GetMapping()
@@ -30,21 +35,28 @@ public class MainController {
 
     @GetMapping("/user")
     public ResponseEntity<?> user() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        System.out.println("authentication = " + authentication.getName());
-        System.out.println("authentication = " + authentication.getAuthorities());
-        System.out.println("principal = " + principal);
-//        System.out.println("Principal class: " + principal.getClass().getName());
 
-        // 권한 확인
-        boolean hasAdminRole = authentication.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
-        boolean hasUserRole = authentication.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_USER"));
 
-        System.out.println("Has ROLE_ADMIN: " + hasAdminRole);
-        System.out.println("Has ROLE_USER: " + hasUserRole);
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            String userName = authentication.getName();
+            CustomUserDetails UserDetails = (CustomUserDetails) authentication.getPrincipal();
+            Collection<? extends GrantedAuthority> authorities = UserDetails.getAuthorities();
+            // 권한 확인
+            boolean hasAdminRole = authorities.stream()
+                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+            boolean hasUserRole = authorities.stream()
+                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_USER"));
+
+            System.out.println("Has ROLE_ADMIN: " + hasAdminRole);
+            System.out.println("Has ROLE_USER: " + hasUserRole);
+            log.info("userName: {}", userName);
+        } catch (NullPointerException e) {
+            log.info("userName is null");
+        }
+
+
         return ResponseEntity.ok(200);
 
     }

@@ -41,10 +41,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private OAuth2Response getOAuth2Response(OAuth2User oAuth2User, String registrationId) {
         if (registrationId.equals("naver")) {
-            log.debug("네이버 로 로그인");
+            log.info("네이버 로 로그인");
             return new NaverResponse(oAuth2User.getAttributes());
         } else if (registrationId.equals("google")) {
-            log.debug("구글 로 로그인");
+            log.info("구글 로 로그인");
             return new GoogleResponse(oAuth2User.getAttributes());
         } else {
             throw new IllegalArgumentException("Unsupported registration id: " + registrationId);

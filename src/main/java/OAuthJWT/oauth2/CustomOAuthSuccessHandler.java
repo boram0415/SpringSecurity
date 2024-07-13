@@ -36,7 +36,7 @@ public class CustomOAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         GrantedAuthority auth = iterator.next();
 
-        log.debug("유저 ROLE : {}", auth.getAuthority());
+        log.info("유저 ROLE : {}", auth.getAuthority());
         String role = auth.getAuthority();
 
         // jwt 발급

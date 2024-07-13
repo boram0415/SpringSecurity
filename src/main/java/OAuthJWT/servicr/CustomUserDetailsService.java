@@ -19,11 +19,16 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
     
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity user = userRepository.findByUsername(username);
-        log.debug("username: {}", user.getUsername());
-        log.debug("role: {}", user.getRole());
+    public UserDetails loadUserByUsername(String userid) throws UsernameNotFoundException {
+
+        UserEntity user = userRepository.findByUserid(userid);
+
         if (user != null) {
+
+        log.info("userid: {}", user.getUserid());
+        log.info("role: {}", user.getRole());
+
+
             return new CustomUserDetails(UserDTO.builder()
                     .username(user.getUsername())
                     .role(user.getRole())
@@ -31,7 +36,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .password(user.getPassword())
                     .build());
         }
-        throw new UsernameNotFoundException("user not found with username : " + username);
+        throw new UsernameNotFoundException("user not found with username : " + userid);
     }
 
 

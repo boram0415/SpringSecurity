@@ -42,13 +42,13 @@ public class JWTFilter extends OncePerRequestFilter {
     public void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         if("/login".equals(request.getRequestURI())) {
-            log.debug("endPoint = /login");
-            filterChain.doFilter(request,response);
+            log.info("endPoint = /login");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            filterChain.doFilter(request,response);
             return;
         }
 
         String authorization = request.getHeader("Authorization");
-
 
         // Authorization 헤더 검증
         if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -75,22 +75,24 @@ public class JWTFilter extends OncePerRequestFilter {
 //        String accessToken = accessTokenOpt.orElse(null); // 값이 비어있을 경우 인자값을 반환 (null)
 //
 //        if ("null".equals(accessToken) || accessToken == null) {
-//            log.debug("access_token is null or 'null'");
+//            log.info("access_token is null or 'null'");
 //            filterChain.doFilter(request, response);
 //            return;
 //        }
 
         //토큰 유효성 검증
         try {
-            if (JWTUtil.validateAccessToken(accessToken)) {
-                log.warn("expired Token : {}", accessToken);
-                response.sendRedirect("/auth/refresh");
+            if (!JWTUtil.validateAccessToken(accessToken)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.sendRedirect("/expire");
                 return;
             }
-            filterChain.doFilter(request, response);
+//            filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("토큰 유효성 검증 실패", e); // 스택 트레이스를 포함하여 로그에 에러를 남김
+            log.error("expired Token : {}", accessToken);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server Error");
+            response.sendRedirect("/expire");
             return;
         }
 
@@ -104,13 +106,14 @@ public class JWTFilter extends OncePerRequestFilter {
                 .role(role)
                 .build();
 
+        log.debug("SecurityContextHolder 등록 된 정보 : {} ",userDTO.toString());
+
         //UserDetails 에 회원 정보 객체 담기
         CustomUserDetails customOAuth2User = new CustomUserDetails(userDTO);
         //스프링 시큐리티 인증 토큰 생성
         Authentication authToken = new UsernamePasswordAuthenticationToken(customOAuth2User, null, customOAuth2User.getAuthorities());
         //세션에 사용자 등록
         SecurityContextHolder.getContext().setAuthentication(authToken);
-
         log.info("SecurityContextHolder.getContext().setAuthentication(authToken) 등록완료");
         filterChain.doFilter(request, response);
     }

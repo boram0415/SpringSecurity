@@ -19,9 +19,9 @@ public class JoinService {
 
 
     public void joinProcess(UserDTO userDTO) {
-        boolean isExist = userRepository.existsByUsername(userDTO.getUsername());
+        boolean isExist = userRepository.existsByUserid(userDTO.getUserid());
         if (isExist) {
-            log.debug("아이디가 중복임 = {}",userDTO.getUsername());
+            log.info("아이디가 중복임 = {}",userDTO.getUserid());
             return;
         }
         //테스트
@@ -34,6 +34,6 @@ public class JoinService {
                 .build();
 
         userRepository.save(user);
-        log.debug("회원가입 완료");
+        log.info("회원가입 완료");
     }
 }

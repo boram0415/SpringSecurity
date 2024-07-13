@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -14,10 +16,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Slf4j
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
@@ -33,18 +37,19 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
 
-        logger.debug("로그인 성공 !!");
+        log.debug("로그인 성공 !!");
 
-        CustomUserDetails customUserDetails = (CustomUserDetails) authResult.getPrincipal();
+        CustomUserDetails UserDetails = (CustomUserDetails) authResult.getPrincipal();
+        Collection<? extends GrantedAuthority> authorities = UserDetails.getAuthorities();
 
-        String usernama = customUserDetails.getUsername();
+        // 사용자 이름과 권한으로 토큰 생성
+        String usernama = UserDetails.getUsername();
 
-        List<String> roles = customUserDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
+        GrantedAuthority auth = authorities.stream().findFirst()
+                .orElseThrow(() -> new RuntimeException("No authorities found"));
+
         // 토큰 생성
-        String accessToken = JWTUtil.generateAccessToken(usernama, roles.toString());
-
+        String accessToken = JWTUtil.generateAccessToken(usernama, auth.getAuthority());
         response.addHeader("Authorization","Bearer "+ accessToken);
 
     }

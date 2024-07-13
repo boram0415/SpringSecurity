@@ -15,12 +15,13 @@ import java.security.Key;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Scanner;
 
 /**
  * JWT
  * 발행
  * 유효성 검증
- * */
+ */
 @Component
 @Slf4j
 public class JWTUtil {
@@ -30,17 +31,17 @@ public class JWTUtil {
     @Value("${jwt.refresh-secret}")
     private String refreshSecretKey;
     private static final long expirationTime = 30 * 60 * 1000; // 30분;
-    private static final long refreshExpirationTime = 7 * 24 * 60 * 60 * 1000 ; // 7일
+    private static final long refreshExpirationTime = 7 * 24 * 60 * 60 * 1000; // 7일
 
     private static Key accessEncKey;
     private static Key refreshEncKey;
 
 
     @PostConstruct
-    public void init(){
+    public void init() {
         accessEncKey = new SecretKeySpec(accessSecretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
         refreshEncKey = new SecretKeySpec(refreshSecretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
-        log.info("accessEncKey initialized: {}", Arrays.toString(accessEncKey.getEncoded()));
+//        log.info("accessEncKey initialized: {}", Arrays.toString(accessEncKey.getEncoded()));
     }
 
     public static String generateAccessToken(String username, String role) {
@@ -85,19 +86,25 @@ public class JWTUtil {
         return validateToken(token, refreshEncKey);
     }
 
-    private static String extractClaim(String token, Key key, String claim) {
-        return Jwts.parser()
-                .verifyWith((SecretKey) key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .get(claim, String.class);
+    private static String extractClaim(String token, Object keyValue, String claim) {
+        if (keyValue instanceof SecretKey key) {
+            return Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .get(claim, String.class);
+
+        }
+
+        throw new NullPointerException("Invalid claim");
+
     }
 
-//
+    //
 //    public static Boolean isExpiredAccessToken(String token) {
 //
-//        log.debug("token : {}", token);
+//        log.info("token : {}", token);
 //
 //        // JWT 토큰 파싱 하여 클레임 객체 추출
 //        Claims claims = Jwts.parser()
@@ -118,10 +125,21 @@ public class JWTUtil {
 //    }
 
     private static boolean validateToken(String token, Key key) {
-
         try {
-            log.info("token = {} , keyEncoded = {} ", token,key.getEncoded());
-            return Jwts.parser().verifyWith((SecretKey) key).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
+            // JWT 토큰에서 만료 날짜를 추출
+            Date expirationDate = Jwts.parser()
+                    .verifyWith((SecretKey) key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getExpiration();
+
+            // 만료 날짜가 현재 날짜보다 이전인 경우, 만료된 토큰으로 간주
+            if (expirationDate.before(new Date())) {
+                log.error("JWT Token is expired");
+                return false;
+            }
+            return true; // 토큰이 유효한 경우
         } catch (ExpiredJwtException e) {
             log.error("JWT Token is expired", e);
         } catch (MalformedJwtException e) {
@@ -133,6 +151,6 @@ public class JWTUtil {
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty", e);
         }
-        return false;
+        return false; // 예외가 발생한 경우, 토큰이 유효하지 않음
     }
 }

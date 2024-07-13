@@ -1,6 +1,7 @@
 package OAuthJWT.config;
 
 
+import OAuthJWT.formLoginHandler.CustomAccessDeniedHandler;
 import OAuthJWT.formLoginHandler.CustomSuccessHandler;
 import OAuthJWT.jwt.JWTFilter;
 import OAuthJWT.jwt.JWTUtil;
@@ -9,6 +10,7 @@ import OAuthJWT.jwt.LoginFilter;
 import OAuthJWT.logging.LoggingFilter;
 import OAuthJWT.oauth2.CustomOAuthSuccessHandler;
 import OAuthJWT.oauth2.CustomOAuth2UserService;
+import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +25,9 @@ import org.springframework.security.config.annotation.web.configurers.LogoutConf
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -41,8 +45,8 @@ public class SecurityConfig {
     private final CustomOAuthSuccessHandler customOAuthSuccessHandler;
     private final CustomSuccessHandler customSuccessHandler;
     private final AuthenticationConfiguration configuration;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final JWTUtil jwtUtil;
-
 
 
     @Bean
@@ -57,27 +61,32 @@ public class SecurityConfig {
                 .authorizeHttpRequests((auth) -> auth
                         // 정적 리소스에 대한 접근 허용
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                        // authenticated() : 로그인 되어야 접근 가능 함
-                        .requestMatchers("/user").hasRole("USER")
-                        .requestMatchers("/joinForm", "/join","/error").permitAll()
+                        .requestMatchers("/joinForm", "/join", "/error").permitAll()
                         .requestMatchers("/admin").hasRole("ADMIN")
-                        .requestMatchers("/swagger", "/swagger-ui/**", "/api-docs", "/api-docs/**", "/v3/api-docs/**")
-
+                        .requestMatchers("/user").hasRole("USER")
+                        .requestMatchers("/swagger", "/swagger-ui/**", "/api-docs", "/api-docs/**", "/v3/api-docs/**", "/")
                         .permitAll()
+                        // authenticated() : 로그인 되어야 접근 가능 함
                         .anyRequest().authenticated());
+
+        // 예외 핸들러 작성
+        http
+                .exceptionHandling(ex -> ex
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                );
 
 
         //From 로그인 방식 disable
         http
                 .formLogin(AbstractHttpConfigurer::disable);
 
-        http
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .logoutSuccessUrl("/logoutSuccess")
-                        .permitAll());
+//        http
+//                .logout(logout -> logout
+//                        .logoutUrl("/logout")
+//                        .invalidateHttpSession(true)
+//                        .deleteCookies("JSESSIONID")
+//                        .logoutSuccessUrl("/logoutSuccess")
+//                        .permitAll());
 
         //From 로그인 방식 disable
 //        http
@@ -86,7 +95,6 @@ public class SecurityConfig {
 //                        .loginProcessingUrl("/login")
 //                        .successHandler(customSuccessHandler)
 //                        .permitAll()
-//
 //                ).logout(LogoutConfigurer::permitAll);
 
 
@@ -105,15 +113,14 @@ public class SecurityConfig {
 //                                .userService(customOAuth2UserService)))
 //                        .successHandler(customOAuthSuccessHandler));
 
-        // JWTFilter 추가
-        http
-                .addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
 
-        http
-                .addFilterAt(new LoginFilter(customAuthenticationManager(configuration),jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        // JWTFilter 추가 - JWTFilter는 로그인 필터(LoginFilter) 후에 실행되어야 합니다.
+        http.addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
+        // LoginFilter 는 UsernamePasswordAuthenticationFilter 와 동일한 위치에 배치
+        http.addFilterAt(new LoginFilter(customAuthenticationManager(configuration), jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
-        // 로깅 설정
+//         로깅 설정
 //        http
 //                .addFilterAfter(new LoggingFilter(), UsernamePasswordAuthenticationFilter.class); // LoggingFilter 를 UsernamePasswordAuthenticationFilter 가 실행된 후에 실행
 
