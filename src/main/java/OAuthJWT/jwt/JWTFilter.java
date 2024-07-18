@@ -2,6 +2,7 @@ package OAuthJWT.jwt;
 
 import OAuthJWT.dto.UserDTO;
 import OAuthJWT.oauth2.CustomUserDetails;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -16,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * 1. OncePerRequestFilter 를 활용하는 이유
@@ -32,87 +35,59 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JWTFilter extends OncePerRequestFilter {
 
-    public final JWTUtil jaJwtUtil;
+    private static final String LOGIN_URI = "/login";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private final JWTUtil jwtUtil;
 
     @Override
-    public void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
-
-        if("/login".equals(request.getRequestURI())) {
-            log.info("endPoint = /login");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//            filterChain.doFilter(request,response);
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+        // 로그인 시점 토큰 유효성 체크 불필요
+        if (LOGIN_URI.equals(request.getRequestURI())) {
+            log.info("Endpoint = {}", LOGIN_URI);
+            filterChain.doFilter(request, response);
             return;
         }
 
         String authorization = request.getHeader("Authorization");
 
         // Authorization 헤더 검증
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            log.error("token null | class Name = {}", getClass());
-            filterChain.doFilter(request, response);
+        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+            log.error("Token is null or does not start with 'Bearer ' | className = {}", getClass());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        String accessToken = authorization.split(" ")[1]; // 값이 비어있을 경우 인자값을 반환 (null)
 
-        // 토큰 소멸 시간 검증
-//        if (!JWTUtil.validateAccessToken(accessToken)) {
-//            filterChain.doFilter(request,response);
-//            return;
-//        }
+        String accessToken = authorization.substring(BEARER_PREFIX.length());
 
-        //cookie 들을 불러온 뒤 Authorization Key 에 담긴 쿠키를 찾음
-//        Cookie[] cookies = request.getCookies();
-//        Optional<String> accessTokenOpt = Optional.ofNullable(cookies) // 쿠키가 null 인지 체크해서
-//                .flatMap(cs -> Arrays.stream(cs) // 배열 돌리기
-//                        .filter(cookie -> "access_token".equals(cookie.getName())) // access_token 키 값을 찾으면
-//                        .map(Cookie::getValue) // 그 value 를 가져와
-//                        .findFirst()); // 일치 하는 값 반환
-
-//        String accessToken = accessTokenOpt.orElse(null); // 값이 비어있을 경우 인자값을 반환 (null)
-//
-//        if ("null".equals(accessToken) || accessToken == null) {
-//            log.info("access_token is null or 'null'");
-//            filterChain.doFilter(request, response);
-//            return;
-//        }
-
-        //토큰 유효성 검증
+        // 토큰 유효성 검증
         try {
-            if (!JWTUtil.validateAccessToken(accessToken)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.sendRedirect("/expire");
-                return;
-            }
-//            filterChain.doFilter(request, response);
-        } catch (Exception e) {
-            log.error("토큰 유효성 검증 실패", e); // 스택 트레이스를 포함하여 로그에 에러를 남김
-            log.error("expired Token : {}", accessToken);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server Error");
-            response.sendRedirect("/expire");
+            JWTUtil.validateAccessToken(accessToken);
+        } catch (NullPointerException e) {
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error");
+            return;
+        } catch (ExpiredJwtException | IllegalArgumentException e) {
+            response.sendRedirect("pire");
             return;
         }
 
-        // 토큰에서 username , role 획득
+        // 토큰에서 username, role 획득
         String username = JWTUtil.getUsernameFromAccessToken(accessToken);
         String role = JWTUtil.getRoleFromAccessToken(accessToken);
 
-        //userDTO 를 생성하여 값 set
+        // UserDTO 생성 및 값 설정
         UserDTO userDTO = UserDTO.builder()
                 .username(username)
                 .role(role)
                 .build();
 
-        log.debug("SecurityContextHolder 등록 된 정보 : {} ",userDTO.toString());
 
-        //UserDetails 에 회원 정보 객체 담기
+        // CustomUserDetails 에 회원 정보 객체 담기
         CustomUserDetails customOAuth2User = new CustomUserDetails(userDTO);
-        //스프링 시큐리티 인증 토큰 생성
+        // 스프링 시큐리티 인증 토큰 생성
         Authentication authToken = new UsernamePasswordAuthenticationToken(customOAuth2User, null, customOAuth2User.getAuthorities());
-        //세션에 사용자 등록
+        // 세션에 사용자 등록
         SecurityContextHolder.getContext().setAuthentication(authToken);
-        log.info("SecurityContextHolder.getContext().setAuthentication(authToken) 등록완료");
+        log.info("SecurityContextHolder 권한 등록 완료");
         filterChain.doFilter(request, response);
     }
-
-
 }

@@ -1,9 +1,9 @@
 package OAuthJWT.jwt;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -13,9 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Date;
-import java.util.Scanner;
 
 /**
  * JWT
@@ -30,12 +28,13 @@ public class JWTUtil {
     private String accessSecretKey;
     @Value("${jwt.refresh-secret}")
     private String refreshSecretKey;
-    private static final long expirationTime = 30 * 60 * 1000; // 30분;
+//    private static final long expirationTime = 30 * 30 * 1000; // 30분;
+    private static final long expirationTime = 60000; // 1분
     private static final long refreshExpirationTime = 7 * 24 * 60 * 60 * 1000; // 7일
+    private static final int COOKIE =60 * 60 * 24 * 30;
 
     private static SecretKey accessEncKey;
     private static SecretKey refreshEncKey;
-
 
     @PostConstruct
     public void init() {
@@ -79,12 +78,12 @@ public class JWTUtil {
         return extractClaim(token, refreshEncKey, "role");
     }
 
-    public static boolean validateAccessToken(String token) {
-        return validateToken(token, accessEncKey);
+    public static void validateAccessToken(String token) {
+        validateToken(token, accessEncKey);
     }
 
-    public static boolean validateRefreshToken(String token) {
-        return validateToken(token, refreshEncKey);
+    public static void validateRefreshToken(String token) throws Exception{
+        validateToken(token, refreshEncKey);
     }
 
     private static String extractClaim(String token, Object keyValue, String claim) {
@@ -99,33 +98,42 @@ public class JWTUtil {
         throw new NullPointerException("Invalid claim");
     }
 
-    private static boolean validateToken(String token, SecretKey key) {
+    private static void validateToken(String token, SecretKey key) {
         try {
             // JWT 토큰에서 만료 날짜를 추출
-            Date expirationDate = Jwts.parser()
+            Jwts.parser()
                     .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload()
-                    .getExpiration();
+                    .getExpiration()
+                    .before(new Date());
 
-            // 만료 날짜가 현재 날짜보다 이전인 경우, 만료된 토큰으로 간주
-            if (expirationDate.before(new Date())) {
-                log.error("JWT Token is expired");
-                return false;
-            }
-            return true; // 토큰이 유효한 경우
         } catch (ExpiredJwtException e) {
             log.error("JWT Token is expired", e);
+            throw new NullPointerException("JWT Token is expired");
         } catch (MalformedJwtException e) {
             log.error("Invalid JWT Token", e);
+            throw new NullPointerException("Invalid JWT Token");
         } catch (SignatureException e) {
             log.error("Invalid JWT signature", e);
+            throw new NullPointerException("Invalid JWT signature");
         } catch (UnsupportedJwtException e) {
             log.error("JWT token is unsupported", e);
+            throw new NullPointerException("JWT token is unsupported");
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty", e);
+            throw new NullPointerException("JWT claims string is empty");
         }
-        return false; // 예외가 발생한 경우, 토큰이 유효하지 않음
     }
+
+    public static Cookie createCookie(String refreshToken) {
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true); // JavaScript 에서 접근하지 못하도록 설정
+        refreshTokenCookie.setSecure(true); // HTTPS 를 통해서만 전송되도록 설정
+        refreshTokenCookie.setPath("/"); // 하위 모든 경로 쿠키 유효
+        refreshTokenCookie.setMaxAge(COOKIE); // 쿠키의 유효기간 설정 (30일)
+        return refreshTokenCookie;
+    }
+
 }

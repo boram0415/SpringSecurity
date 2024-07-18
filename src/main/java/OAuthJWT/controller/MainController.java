@@ -36,35 +36,32 @@ public class MainController {
     @GetMapping("/user")
     public ResponseEntity<?> user() {
 
-
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-            String userName = authentication.getName();
             CustomUserDetails UserDetails = (CustomUserDetails) authentication.getPrincipal();
             Collection<? extends GrantedAuthority> authorities = UserDetails.getAuthorities();
+
             // 권한 확인
             boolean hasAdminRole = authorities.stream()
                     .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
             boolean hasUserRole = authorities.stream()
                     .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_USER"));
 
-            System.out.println("Has ROLE_ADMIN: " + hasAdminRole);
-            System.out.println("Has ROLE_USER: " + hasUserRole);
-            log.info("userName: {}", userName);
+            log.info("Has ROLE_ADMIN: {}" ,hasAdminRole);
+            log.info("Has ROLE_USER: {}" ,hasUserRole);
+
         } catch (NullPointerException e) {
             log.info("userName is null");
+            return ResponseEntity.status(401).body("UserName is null");
         }
-
-
-        return ResponseEntity.ok(200);
+        return ResponseEntity.status(200).body("success!");
 
     }
 
-    @GetMapping("/expire")
-    public String accessTokeExpire() {
-        return "expire";
-    }
+//    @GetMapping("/expire")
+//    public String accessTokeExpire() {
+//        return "expire";
+//    }
 
     @GetMapping("/refreshToken")
     public String refreshToken() {

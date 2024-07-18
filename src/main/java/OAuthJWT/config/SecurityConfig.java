@@ -114,8 +114,8 @@ public class SecurityConfig {
 //                        .successHandler(customOAuthSuccessHandler));
 
 
-        // JWTFilter 추가 - JWTFilter는 로그인 필터(LoginFilter) 후에 실행되어야 합니다.
-        http.addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        // JWTFilter 추가 - JWTFilter 는 로그인 필터(LoginFilter) 후에 실행되어야 합니다.
+        http.addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
 
         // LoginFilter 는 UsernamePasswordAuthenticationFilter 와 동일한 위치에 배치
         http.addFilterAt(new LoginFilter(customAuthenticationManager(configuration), jwtUtil), UsernamePasswordAuthenticationFilter.class);
@@ -153,14 +153,21 @@ public class SecurityConfig {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
-
+        //새로운 CorsConfiguration 객체 생성
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*")); // 모든 출처 허용
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 메서드
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // 허용할 헤더
-        configuration.setAllowCredentials(true); // 쿠키 허용
-        configuration.setMaxAge(3600L); // 캐싱 시간 설정
+        //모든 출처 허용
+        configuration.setAllowedOrigins(List.of("*"));
+        //허용할 HTTP 메서드 설정
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        //허용할 헤더 설정
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        //쿠키 허용
+        configuration.setAllowCredentials(true);
+        //캐싱 시간 설정 (초 단위)
+        configuration.setMaxAge(3600L);
+        //새로운 UrlBasedCorsConfigurationSource 객체 생성
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        //모든 경로에 대해 CORS 구성 등록
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
