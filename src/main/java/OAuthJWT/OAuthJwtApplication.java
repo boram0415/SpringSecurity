@@ -10,7 +10,6 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 public class OAuthJwtApplication {
 
 	public static void main(String[] args) {
-		System.out.println("hello world ! ");
 		SpringApplication.run(OAuthJwtApplication.class, args);
 	}
 

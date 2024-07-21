@@ -1,4 +1,4 @@
-{}#!/bin/sh
+#!/bin/sh
 
 #
 # Copyright © 2015-2021 the original authors.
@@ -246,4 +246,15 @@ eval "set -- $(
         tr '\n' ' '
     )" '"$@"'
 
-exec "$JAVACMD" "$@"
+
+
+DEFAULT_JVM_OPTS=""
+
+# Attempt to set JAVA_HOME if it's not already set
+if [ -z "$JAVA_HOME" ]; then
+  JAVA_HOME=$(/usr/libexec/java_home)
+fi
+
+GRADLE_WRAPPER_JAR="/Users/boramkim/Desktop/project files/security-OAuth2.0-JWT/gradle/wrapper/gradle-wrapper.jar"
+
+exec "$JAVA_HOME/bin/java" -jar "$GRADLE_WRAPPER_JAR" "$@"
