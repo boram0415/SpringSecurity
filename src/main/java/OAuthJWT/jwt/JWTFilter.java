@@ -14,10 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -35,17 +37,23 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class JWTFilter extends OncePerRequestFilter {
 
-    private static final String LOGIN_URI = "/login";
     private static final String BEARER_PREFIX = "Bearer ";
     private final JWTUtil jwtUtil;
 
+    private static final List<AntPathRequestMatcher> excludeUrls = List.of(
+            new AntPathRequestMatcher("/login"),
+            new AntPathRequestMatcher("/join"),
+            new AntPathRequestMatcher("/auth/refresh")
+    );
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
-        // 로그인 시점 토큰 유효성 체크 불필요
-        if (LOGIN_URI.equals(request.getRequestURI())) {
-            log.info("Endpoint = {}", LOGIN_URI);
-            filterChain.doFilter(request, response);
-            return;
+
+        // 토큰 유효성 체크 불필요한 요청일 경우
+        for (AntPathRequestMatcher matcher : excludeUrls) {
+            if (matcher.matches(request)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
 
         String authorization = request.getHeader("Authorization");
@@ -66,7 +74,7 @@ public class JWTFilter extends OncePerRequestFilter {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error");
             return;
         } catch (ExpiredJwtException | IllegalArgumentException e) {
-            response.sendRedirect("pire");
+            response.sendRedirect("expire");
             return;
         }
 
@@ -79,7 +87,6 @@ public class JWTFilter extends OncePerRequestFilter {
                 .username(username)
                 .role(role)
                 .build();
-
 
         // CustomUserDetails 에 회원 정보 객체 담기
         CustomUserDetails customOAuth2User = new CustomUserDetails(userDTO);

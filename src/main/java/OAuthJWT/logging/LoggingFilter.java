@@ -13,7 +13,7 @@ public class LoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         // 로그 파일 경로 설정
-        String logFilePath = "/Users/boramkim/Desktop/project files/security-OAuth2.0-JWT/logs/access.log"; // 로그 파일 경로 설정
+        String logFilePath = "logs/access.log"; // 로그 파일 경로 설정
         filterChain.doFilter(request,response);
     }
 

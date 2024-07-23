@@ -1,17 +1,21 @@
 package OAuthJWT.jwt;
 
+import OAuthJWT.entity.RefreshEntity;
+import OAuthJWT.repository.RefreshTokenRepository;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -22,19 +26,22 @@ import java.util.Date;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JWTUtil {
 
     @Value("${jwt.secret}")
     private String accessSecretKey;
     @Value("${jwt.refresh-secret}")
     private String refreshSecretKey;
-//    private static final long expirationTime = 30 * 30 * 1000; // 30분;
-    private static final long expirationTime = 60000; // 1분
-    private static final long refreshExpirationTime = 7 * 24 * 60 * 60 * 1000; // 7일
-    private static final int COOKIE =60 * 60 * 24 * 30;
+    private static final long expirationTime = 1800; // 30분;
+//    public static final long expirationTime = 60; // 1분
+    public static final long refreshExpirationTime = 604800; // 7일
+    public static final int COOKIE =60 * 60 * 24 * 30; // 30일
 
     private static SecretKey accessEncKey;
     private static SecretKey refreshEncKey;
+
+    private final RefreshTokenRepository refreshRepository;
 
     @PostConstruct
     public void init() {
@@ -53,6 +60,9 @@ public class JWTUtil {
     }
 
     private static String generateToken(String username, String role, Key key, long expirationTime) {
+        log.debug("key = {} " ,key);
+        log.debug("username = {} " ,username);
+        log.debug("expirationTime = {} " ,expirationTime);
         return Jwts.builder()
                 .claim("username", username)
                 .claim("role", role)
@@ -78,12 +88,12 @@ public class JWTUtil {
         return extractClaim(token, refreshEncKey, "role");
     }
 
-    public static void validateAccessToken(String token) {
-        validateToken(token, accessEncKey);
+    public static boolean validateAccessToken(String token) {
+        return validateToken(token, accessEncKey);
     }
 
-    public static void validateRefreshToken(String token) throws Exception{
-        validateToken(token, refreshEncKey);
+    public static boolean validateRefreshToken(String token){
+        return validateToken(token, refreshEncKey);
     }
 
     private static String extractClaim(String token, Object keyValue, String claim) {
@@ -98,32 +108,18 @@ public class JWTUtil {
         throw new NullPointerException("Invalid claim");
     }
 
-    private static void validateToken(String token, SecretKey key) {
+    private static boolean validateToken(String token, SecretKey key) {
         try {
-            // JWT 토큰에서 만료 날짜를 추출
-            Jwts.parser()
+            Date expiration = Jwts.parser()
                     .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload()
-                    .getExpiration()
-                    .before(new Date());
-
-        } catch (ExpiredJwtException e) {
-            log.error("JWT Token is expired", e);
-            throw new NullPointerException("JWT Token is expired");
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT Token", e);
-            throw new NullPointerException("Invalid JWT Token");
-        } catch (SignatureException e) {
-            log.error("Invalid JWT signature", e);
-            throw new NullPointerException("Invalid JWT signature");
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported", e);
-            throw new NullPointerException("JWT token is unsupported");
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty", e);
-            throw new NullPointerException("JWT claims string is empty");
+                    .getExpiration();
+            return expiration.before(new Date());
+        } catch (JwtException e) {
+            log.error("만료되었거나 유효하지 않은 토큰", e);
+            return true; // 만료되었거나 유효하지 않은 토큰으로 간주
         }
     }
 
@@ -134,6 +130,26 @@ public class JWTUtil {
         refreshTokenCookie.setPath("/"); // 하위 모든 경로 쿠키 유효
         refreshTokenCookie.setMaxAge(COOKIE); // 쿠키의 유효기간 설정 (30일)
         return refreshTokenCookie;
+    }
+
+
+    public void addRefreshToken(String userEmail, String refresh ) {
+
+        // 현재 시간에 만료 시간을 더하여 LocalDateTime 생성
+        LocalDateTime expirationTime = LocalDateTime.now().plusSeconds(refreshExpirationTime);
+        log.info("expirationTime = {}", expirationTime);
+        refreshRepository.save(RefreshEntity.builder()
+                .refresh(refresh)
+                .userEmail(userEmail)
+                .expiration(expirationTime)
+                .build());
+    }
+
+
+    // 정기적으로 만료된 토큰 삭제
+    @Scheduled(cron = "0 0 0 * * ?") // 매일 자정에 실행
+    public void removeExpiredTokens() {
+        refreshRepository.deleteByExpirationBefore(LocalDateTime.now());
     }
 
 }

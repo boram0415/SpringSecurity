@@ -1,10 +1,9 @@
 package OAuthJWT.jwt;
 
 import OAuthJWT.oauth2.CustomUserDetails;
-import com.nimbusds.jwt.JWT;
+import OAuthJWT.repository.RefreshTokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,6 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final JWTUtil jwtUtil;
 
-
     @Override
     // 실제로 인증을 시도하는 핵심 메서드로, 인증이 성공하면 Authentication 객체를 반환하고, 실패하면 AuthenticationException 을 던집니다.
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -68,26 +66,29 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
         // 사용자 이름과 권한으로 토큰 생성
         String usernama = UserDetails.getUsername();
+        log.info("successfulAuthentication() username : {}", usernama);
 
         GrantedAuthority auth = authorities.stream().findFirst()
                 .orElseThrow(() -> new RuntimeException("No authorities found"));
 
-        // accessToken 토큰 생성
+        // access , refresh 토큰 생성
         String accessToken = JWTUtil.generateAccessToken(usernama, auth.getAuthority());
-        // refreshToken 토큰 생성
         String refreshToken = JWTUtil.generateRefreshToken(usernama, auth.getAuthority());
 
-        // 쿠키에 refreshToken 토큰 담아 넘기기
+        // Refresh 토큰 저장
+        jwtUtil.addRefreshToken(usernama,refreshToken);
+
+        // 쿠키에 refreshToken 토큰 저장
         response.addCookie(JWTUtil.createCookie(refreshToken));
-        response.addHeader("Authorization","Bearer "+ accessToken);
+        response.addHeader("Authorization", "Bearer " + accessToken);
+        response.setStatus(HttpServletResponse.SC_OK);
 
     }
 
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
-
-
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     }
+
 }

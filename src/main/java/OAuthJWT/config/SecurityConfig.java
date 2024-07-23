@@ -10,6 +10,7 @@ import OAuthJWT.jwt.LoginFilter;
 import OAuthJWT.logging.LoggingFilter;
 import OAuthJWT.oauth2.CustomOAuthSuccessHandler;
 import OAuthJWT.oauth2.CustomOAuth2UserService;
+import OAuthJWT.repository.RefreshTokenRepository;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -41,9 +42,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final CustomOAuthSuccessHandler customOAuthSuccessHandler;
-    private final CustomSuccessHandler customSuccessHandler;
+//    private final CustomOAuth2UserService customOAuth2UserService;
+//    private final CustomOAuthSuccessHandler customOAuthSuccessHandler;
+//    private final CustomSuccessHandler customSuccessHandler;
     private final AuthenticationConfiguration configuration;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final JWTUtil jwtUtil;
@@ -61,7 +62,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((auth) -> auth
                         // 정적 리소스에 대한 접근 허용
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                        .requestMatchers("/joinForm", "/join", "/error").permitAll()
+                        .requestMatchers("/join", "/login","/auth/refresh").permitAll()
                         .requestMatchers("/admin").hasRole("ADMIN")
                         .requestMatchers("/user").hasRole("USER")
                         .requestMatchers("/swagger", "/swagger-ui/**", "/api-docs", "/api-docs/**", "/v3/api-docs/**", "/")
@@ -118,7 +119,7 @@ public class SecurityConfig {
         http.addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
 
         // LoginFilter 는 UsernamePasswordAuthenticationFilter 와 동일한 위치에 배치
-        http.addFilterAt(new LoginFilter(customAuthenticationManager(configuration), jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAt(new LoginFilter(customAuthenticationManager(configuration), jwtUtil ), UsernamePasswordAuthenticationFilter.class);
 
 //         로깅 설정
 //        http

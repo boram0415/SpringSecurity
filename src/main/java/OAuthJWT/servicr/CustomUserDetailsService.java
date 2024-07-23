@@ -28,7 +28,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         log.info("userid: {}", user.getUserid());
         log.info("role: {}", user.getRole());
 
-
             return new CustomUserDetails(UserDTO.builder()
                     .username(user.getUsername())
                     .role(user.getRole())

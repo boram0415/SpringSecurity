@@ -1,12 +1,22 @@
 package OAuthJWT.repository;
 
-import OAuthJWT.entity.RefreshTokenEntity;
+import OAuthJWT.entity.RefreshEntity;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 
-public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity,Long> {
+@Transactional
+public interface RefreshTokenRepository extends JpaRepository<RefreshEntity,Long> {
 
-    RefreshTokenEntity findByRefreshToken(String refreshToken);
+//    RefreshTokenEntity findByRefreshToken(String userEmail);
+    boolean existsByRefresh(String refresh);
+    void deleteAllByRefresh(String refresh);
+    boolean existsByUserEmail(String userEmil);
+
+    void deleteByExpirationBefore(LocalDateTime expiration);
+    void deleteByUserEmail(String userEmil);
 
 }
